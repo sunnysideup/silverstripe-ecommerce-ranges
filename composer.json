@@ -1,0 +1,32 @@
+{
+    "name": "sunnysideup/ecommerce-ranges",
+    "type": "silverstripe-vendormodule",
+    "description": "Add ranges to e-commerce products (e.g. bag in ten different colours)",
+    "keywords": [
+        "Silverstripe-CMS",
+        "CMS",
+        "Silverstripe",
+        "ecommerce",
+        "range",
+        "ranges",
+        "variations",
+        "product",
+        "product variations"
+    ],
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Nicolaas Francken",
+            "email": "modules@sunnysideup.co.nz",
+            "role": "lead developer"
+        }
+    ],
+    "require": {
+        "silverstripe/recipe-core": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sunnysideup\\EcommerceRanges\\": "src/"
+        }
+    }
+}
