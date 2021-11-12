@@ -1,0 +1,6 @@
+
+
+
+Sunnysideup\Ecommerce\ProductsAndGroups\BaseProductList:
+  default_product_filter:
+    RangeParentID: 0

@@ -1,1 +1,1 @@
-add the traits to your product and product group.
+add the extension to your product and product group.

@@ -1,6 +1,10 @@
 <?php
 
-namespace Sunnysideup\EcommerceRanges\Traits;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\ORM\DataExtension;
+
+use Sunnysideup\Ecommerce\Pages\Product;
+use Sunnysideup\Ecommerce\Pages\ProductGroup;
 
 use Sunnysideup\EcommerceRanges\Api\StringAPI;
 use SilverStripe\Forms\CheckboxField;
@@ -16,10 +20,64 @@ use SilverStripe\ORM\DataList;
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldEditOriginalPageConfig;
 use Sunnysideup\Ecommerce\Model\Money\EcommerceCurrency;
 
-use Sunnysideup\Ecommerce\Pages\Product;
+use Sunnysideup\Ecommerce\Config\EcommerceConfig;
 
-trait RangeProductTrait
+
+class RangeProduct extends DataExtension
 {
+    private static $casting = [
+        'RangeIdentifierCalculated' => 'Varchar',
+        'RangeTitleCalculated' => 'Varchar',
+    ];
+
+
+    /**
+     * stadard SS declaration.
+     *
+     * @var array
+     */
+    private static $db = [
+        'RangeIdentifier' => 'Varchar',
+        'RangeTitle' => 'Varchar',
+        'RangeParentByline' => 'Varchar',
+        'AutoRangeCommonPhrase' => 'Boolean(1)',
+        'RangeCommonPhrase' => 'Varchar',
+        'ShowRangeImages' => 'Boolean',
+    ];
+
+
+    /**
+     * stadard SS declaration.
+     *
+     * @var array
+     */
+    private static $has_one = [
+        'RangeParent' => Product::class,
+        'RangeAsAccessories' => Product::class,
+    ];
+
+    /**
+     * stadard SS declaration.
+     *
+     * @var array
+     */
+    private static $has_many = [
+        'RangeChildren' => Product::class . '.RangeParent',
+    ];
+
+    public function updateCMSFields(FieldList $fields)
+    {
+        if($this->owner->hasMethod('rangeGetCMSFields')) {
+            $this->owner->rangeGetCMSFields($fields);
+        }
+    }
+
+    public function IDForSearchResultsExtension()
+    {
+        return $this->owner->IsRangeChild() ? $this->owner->RangeParentID : null;
+    }
+
+
     protected $_rangePriceRange = [];
 
     private static $_write_to_live = 0;
@@ -42,95 +100,95 @@ trait RangeProductTrait
     public function IsRangeProduct(): bool
     {
         //order is important!
-        return $this->IsRangeChild() || $this->IsRangeParent();
+        return $this->getOwner()->IsRangeChild() || $this->getOwner()->IsRangeParent();
     }
 
     public function IsRangeChild(): bool
     {
-        if (null === $this->_is_range_child) {
-            $this->_is_range_child = ((bool) $this->MyRangeParent());
+        if (null === $this->getOwner()->_is_range_child) {
+            $this->getOwner()->_is_range_child = ((bool) $this->getOwner()->MyRangeParent());
         }
 
-        return $this->_is_range_child;
+        return $this->getOwner()->_is_range_child;
     }
 
     public function IsRangeParent(): bool
     {
-        if (null === $this->_is_range_parent) {
-            $this->_is_range_parent = $this->RangeChildren()->exists();
+        if (null === $this->getOwner()->_is_range_parent) {
+            $this->getOwner()->_is_range_parent = $this->getOwner()->RangeChildren()->exists();
         }
 
-        return $this->_is_range_parent;
+        return $this->getOwner()->_is_range_parent;
     }
 
     public function MyRangeParent()
     {
-        if (null === $this->_my_range_parent) {
-            $this->_my_range_parent = false;
-            if ($this->RangeParentID) {
-                if ($rangeParent = $this->RangeParent()) {
+        if (null === $this->getOwner()->_my_range_parent) {
+            $this->getOwner()->_my_range_parent = false;
+            if ($this->getOwner()->RangeParentID) {
+                if ($rangeParent = $this->getOwner()->RangeParent()) {
                     if ($rangeParent && $rangeParent->exists()) {
-                        $this->_my_range_parent = $rangeParent;
+                        $this->getOwner()->_my_range_parent = $rangeParent;
                     }
                 }
             }
         }
 
-        return $this->_my_range_parent;
+        return $this->getOwner()->_my_range_parent;
     }
 
     public function RangeIdentifierCalculated()
     {
-        return $this->getRangeIdentifierCalculated();
+        return $this->getOwner()->getRangeIdentifierCalculated();
     }
 
     public function getRangeIdentifierCalculated()
     {
-        if (null === $this->_range_identifier) {
-            if ($this->IsRangeProduct()) {
-                if ($this->RangeIdentifier) {
-                    $this->_range_identifier = $this->RangeIdentifier;
+        if (null === $this->getOwner()->_range_identifier) {
+            if ($this->getOwner()->IsRangeProduct()) {
+                if ($this->getOwner()->RangeIdentifier) {
+                    $this->getOwner()->_range_identifier = $this->getOwner()->RangeIdentifier;
                 } else {
-                    $rangeParent = $this->MyRangeParent();
+                    $rangeParent = $this->getOwner()->MyRangeParent();
                     if ($rangeParent && $rangeParent->RangeCommonPhrase) {
-                        $this->_range_identifier = trim(str_ireplace($rangeParent->RangeCommonPhrase, '', $this->Title));
+                        $this->getOwner()->_range_identifier = trim(str_ireplace($rangeParent->RangeCommonPhrase, '', $this->getOwner()->Title));
 
-                        return $this->_range_identifier;
+                        return $this->getOwner()->_range_identifier;
                     }
-                    $this->_range_identifier = $this->Title;
+                    $this->getOwner()->_range_identifier = $this->getOwner()->Title;
                 }
             } else {
-                $this->_range_identifier = $this->Title;
+                $this->getOwner()->_range_identifier = $this->getOwner()->Title;
             }
         }
 
-        return $this->_range_identifier;
+        return $this->getOwner()->_range_identifier;
     }
 
     public function RangeTitleCalculated()
     {
-        return $this->getRangeTitleCalculated();
+        return $this->getOwner()->getRangeTitleCalculated();
     }
 
     public function getRangeTitleCalculated()
     {
-        return $this->RangeTitle ?: $this->Title;
+        return $this->getOwner()->RangeTitle ?: $this->getOwner()->Title;
     }
 
     public function RangeOptions()
     {
-        if (null === $this->_range_options) {
-            $this->_range_options = ArrayList::create();
+        if (null === $this->getOwner()->_range_options) {
+            $this->getOwner()->_range_options = ArrayList::create();
             $parentID = 0;
 
-            if ($this->IsRangeParent()) {
-                $parentID = $this->ID;
-            } elseif ($this->IsRangeChild()) {
-                $parentID = $this->RangeParentID;
+            if ($this->getOwner()->IsRangeParent()) {
+                $parentID = $this->getOwner()->ID;
+            } elseif ($this->getOwner()->IsRangeChild()) {
+                $parentID = $this->getOwner()->RangeParentID;
             }
 
             if ($parentID) {
-                $className = self::class;
+                $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');
                 $dl = $className::get()->filterAny(
                     [
                         'ID' => [$parentID],
@@ -140,10 +198,10 @@ trait RangeProductTrait
                 foreach ($dl as $item) {
                     $item->PriceCalculated = $item->getCalculatedPrice();
                     $item->RangeIdentifierCalculated = $item->getRangeIdentifierCalculated();
-                    $item->IsCurrent = ($item->ID !== $this->ID ? 1 : 0);
-                    $this->_range_options->push($item);
+                    $item->IsCurrent = ($item->ID !== $this->getOwner()->ID ? 1 : 0);
+                    $this->getOwner()->_range_options->push($item);
                 }
-                $this->_range_options = $this->_range_options->sort(
+                $this->getOwner()->_range_options = $this->getOwner()->_range_options->sort(
                     [
                         'IsCurrent' => 'DESC',
                         'PriceCalculated' => 'ASC',
@@ -153,12 +211,12 @@ trait RangeProductTrait
             }
         }
 
-        return $this->_range_options;
+        return $this->getOwner()->_range_options;
     }
 
     public function RangeOptionShowImage()
     {
-        $rangeParent = $this->IsRangeParent() ? $this : $this->MyRangeParent();
+        $rangeParent = $this->getOwner()->IsRangeParent() ? $this : $this->getOwner()->MyRangeParent();
 
         return $rangeParent->ShowRangeImages;
     }
@@ -166,12 +224,12 @@ trait RangeProductTrait
     public function RangePriceRange($isMax = true)
     {
         $varName = false === $isMax || 'false' === $isMax || 0 === $isMax || '0' === $isMax ? 'Min' : 'Max';
-        if (isset($this->_rangePriceRange[$this->ID][$varName])) {
+        if (isset($this->getOwner()->_rangePriceRange[$this->getOwner()->ID][$varName])) {
             //do nothing
         } else {
             $minPrice = 999999999;
             $maxPrice = 0;
-            foreach ($this->RangeOptions() as $option) {
+            foreach ($this->getOwner()->RangeOptions() as $option) {
                 $price = $option->getCalculatedPrice();
                 if ($price < $minPrice) {
                     $minPrice = $price;
@@ -180,11 +238,11 @@ trait RangeProductTrait
                     $maxPrice = $price;
                 }
             }
-            $this->_rangePriceRange[$this->ID] = [];
-            $this->_rangePriceRange[$this->ID]['Min'] = $minPrice;
-            $this->_rangePriceRange[$this->ID]['Max'] = $maxPrice;
+            $this->getOwner()->_rangePriceRange[$this->getOwner()->ID] = [];
+            $this->getOwner()->_rangePriceRange[$this->getOwner()->ID]['Min'] = $minPrice;
+            $this->getOwner()->_rangePriceRange[$this->getOwner()->ID]['Max'] = $maxPrice;
         }
-        $finalPrice = $this->_rangePriceRange[$this->ID][$varName];
+        $finalPrice = $this->getOwner()->_rangePriceRange[$this->getOwner()->ID][$varName];
 
         return EcommerceCurrency::get_money_object_from_order_currency($finalPrice);
     }
@@ -196,16 +254,16 @@ trait RangeProductTrait
      */
     public function RangeHasVariablePrices()
     {
-        $min = $this->RangePriceRange(false);
-        $max = $this->RangePriceRange();
+        $min = $this->getOwner()->RangePriceRange(false);
+        $max = $this->getOwner()->RangePriceRange();
 
         return ($max->amount - $min->amount) > 0;
     }
 
     public function getAllRangeParents()
     {
-        if (null === $this->_all_range_parents) {
-            $className = self::class;
+        if (null === $this->getOwner()->_all_range_parents) {
+            $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');;
             $rangeChildren = $className::get()->filter(['RangeParentID:GreaterThan' => 0]);
 
             $rangeParents = [];
@@ -221,31 +279,31 @@ trait RangeProductTrait
                     }
                 }
             }
-            $this->_all_range_parents = $rangeParents;
+            $this->getOwner()->_all_range_parents = $rangeParents;
         }
 
-        return $this->_all_range_parents;
+        return $this->getOwner()->_all_range_parents;
     }
 
     protected function PotentialRangeProducts(): ?DataList
     {
-        if (null === $this->_potentialRangeProducts) {
-            $className = self::class;
+        if (null === $this->getOwner()->_potentialRangeProducts) {
+            $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');;
             $options = $className::get()
                 ->filter(
                     [
-                        'ParentID' => $this->ParentID,
+                        'ParentID' => $this->getOwner()->ParentID,
                         'AllowPurchase' => true,
                     ]
                 )
                 ->exclude(
                     [
-                        'ID' => $this->ID,
+                        'ID' => $this->getOwner()->ID,
                     ]
                 )
             ;
             if ($options->count() > 5) {
-                $brand = $this->Brand();
+                $brand = $this->getOwner()->Brand();
                 if ($brand && $brand->exists()) {
                     $options = $options
                         ->innerJoin('Product_ProductGroups', 'Product.ID = ProductID')
@@ -253,45 +311,46 @@ trait RangeProductTrait
                     ;
                 }
             }
-            $this->_potentialRangeProducts = $options;
+            $this->getOwner()->_potentialRangeProducts = $options;
         }
 
-        return $this->_potentialRangeProducts;
+        return $this->getOwner()->_potentialRangeProducts;
     }
+
 
     protected function rangeOnBeforeWrite()
     {
-        if ($this->isChanged('RangeParentID') && $this->isPublished()) {
+        if ($this->getOwner()->isChanged('RangeParentID') && $this->getOwner()->isPublished()) {
             if (self::$_write_to_live < 1) {
                 ++self::$_write_to_live;
             }
         }
-        if ($this->IsRangeParent()) {
-            if ($this->RangeChildren()->count() < 2) {
-                $this->AutoRangeCommonPhrase = false;
-                $this->RangeCommonPhrase = false;
-            } elseif ($this->AutoRangeCommonPhrase && ! $this->RangeCommonPhrase) {
-                $titleArray = $this->RangeChildren()->column('Title');
-                // $this->RangeCommonPhrase = StringAPI::longest_common_substring($titleArray);
+        if ($this->getOwner()->IsRangeParent()) {
+            if ($this->getOwner()->RangeChildren()->count() < 2) {
+                $this->getOwner()->AutoRangeCommonPhrase = false;
+                $this->getOwner()->RangeCommonPhrase = false;
+            } elseif ($this->getOwner()->AutoRangeCommonPhrase && ! $this->getOwner()->RangeCommonPhrase) {
+                $titleArray = $this->getOwner()->RangeChildren()->column('Title');
+                // $this->getOwner()->RangeCommonPhrase = StringAPI::longest_common_substring($titleArray);
             }
         }
     }
 
     protected function rangeGetCMSFields($fields)
     {
-        if ($this->getAllRangeParents()) {
+        if ($this->getOwner()->getAllRangeParents()) {
             $fields->addFieldToTab(
                 'Root.Range',
                 DropdownField::create(
                     'RangeAsAccessoriesID',
                     'Add Range Selection To Also Recommended Products',
-                    $this->getAllRangeParents()
+                    $this->getOwner()->getAllRangeParents()
                 ),
                 'EcommerceRecommendedProducts'
             );
         }
 
-        if ($this->IsRangeParent()) {
+        if ($this->getOwner()->IsRangeParent()) {
             $fields->addFieldsToTab(
                 'Root.Range',
                 [
@@ -327,8 +386,8 @@ trait RangeProductTrait
                 ]
             );
         }
-        if ($this->IsRangeChild()) {
-            $className = self::class;
+        if ($this->getOwner()->IsRangeChild()) {
+            $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');;
             $fields->addFieldToTab(
                 'Root.Range',
                 TreeDropdownField::create('RangeParentID', 'Range Parent', $className)
@@ -339,7 +398,7 @@ trait RangeProductTrait
                 CheckboxSetField::create(
                     'RangeChildren',
                     'In this range ...',
-                    $this->PotentialRangeProducts()->map()
+                    $this->getOwner()->PotentialRangeProducts()->map()
                 )
             );
             $fields->addFieldToTab(
@@ -347,7 +406,7 @@ trait RangeProductTrait
                 GridField::create(
                     'RangeChildren_List',
                     'Edit Selected Child Products',
-                    $this->RangeChildren(),
+                    $this->getOwner()->RangeChildren(),
                     GridFieldEditOriginalPageConfig::create()
                 )
             );
@@ -356,18 +415,18 @@ trait RangeProductTrait
             // $component->setSearchFields(array('InternalItemID', 'Title'));
             // $component->setSearchList(
             //     Product::get()
-            //         ->exclude(['InternalItemID' => $this->InternalItemID])
+            //         ->exclude(['InternalItemID' => $this->getOwner()->InternalItemID])
             //         ->filter(['AllowPurchase' => 1])
             // );
         }
 
-        if ($this->IsRangeProduct()) {
+        if ($this->getOwner()->IsRangeProduct()) {
             $fields->addFieldsToTab(
                 'Root.Range',
                 [
                     HeaderField::create(
                         'RangeIdentifierHeader',
-                        'Range Identifier for ' . $this->Title
+                        'Range Identifier for ' . $this->getOwner()->Title
                     ),
                     TextField::create(
                         'RangeIdentifier',
@@ -381,11 +440,39 @@ trait RangeProductTrait
         }
     }
 
+
+    public function ProductAccessories()
+    {
+        if ($this->getOwner()->hasMethod('EcommerceRecommendedProductsForSale')) {
+            if ($this->getOwner()->RangeAsAccessoriesID) {
+                $productIDArray = [];
+                if ($this->getOwner()->EcommerceRecommendedProductsForSale()) {
+                    $productIDArray = $this->getOwner()->EcommerceRecommendedProductsForSale()->columnUnique();
+                }
+                $productIDArray[] = $this->getOwner()->RangeAsAccessoriesID;
+                return Product::get()->filter(['ID' => $productIDArray]);
+            }
+
+            return $this->getOwner()->EcommerceRecommendedProductsForSale();
+        }
+    }
+
     protected function rangeOnAfterWrite()
     {
         if (1 === self::$_write_to_live) {
             ++self::$_write_to_live;
-            $this->writeAndPublish();
+            $this->getOwner()->writeAndPublish();
         }
     }
+
+    public function onBeforeWrite()
+    {
+        $this->rangeOnBeforeWrite();
+    }
+
+    public function onAfterWrite()
+    {
+        $this->rangeOnAfterWrite();
+    }
+
 }
