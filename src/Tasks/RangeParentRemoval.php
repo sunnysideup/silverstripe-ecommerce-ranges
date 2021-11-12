@@ -13,9 +13,11 @@ class RangeParentRemoval extends MigrateDataTaskBase
 
     protected $enabled = true;
 
+    protected $tableName = 'Product';
+
     protected function performMigration()
     {
-        DB::query('UPDATE "Product" SET "RangeParentID" = 0');
-        DB::query('UPDATE "Product_Live" SET "RangeParentID" = 0');
+        DB::query('UPDATE "'.$this->tableName.'" SET "RangeParentID" = 0');
+        DB::query('UPDATE "'.$this->tableName.'_Live" SET "RangeParentID" = 0');
     }
 }
