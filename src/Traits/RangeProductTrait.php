@@ -313,7 +313,7 @@ trait RangeProductTrait
                         ->setDescription(
                             'Use this to automagically replace the common phrase in the Children\'s product names
                             - e.g. If Child Product A is called MyProduct Ink Yellow and Child Product B is called MyProduct Ink Red
-                            then the common phrase should be Canon Ink so that Yellow and Red become the Range Identifiers (shortened titles).
+                            then the common phrase should be MyProduct Ink so that Yellow and Red become the Range Identifiers (shortened titles).
                         '
                         ),
                     CheckboxField::create('AutoRangeCommonPhrase', 'Autocalculate Common Phrase'),
