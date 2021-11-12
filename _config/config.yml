@@ -1,6 +1,26 @@
 
 
-
 Sunnysideup\Ecommerce\ProductsAndGroups\BaseProductList:
   default_product_filter:
     RangeParentID: 0
+
+---
+Name: ecommerce-ranges-aliases
+After:
+   - coresearchaliases
+---
+SilverStripe\Core\Injector\Injector:
+  DataListFilter.ProductParentProducts:
+    class: Sunnysideup\EcommerceRanges\Search\Fields\ProductParentProductsFilter
+
+
+---
+Name: ecommerce-ranges-searchfilters
+After:
+   - coresearchfilters
+---
+
+
+SilverStripe\Core\Injector\Injector:
+  ProductParentProducts:
+    class: Sunnysideup\EcommerceRanges\Search\Fields\ProductParentProductsFilter

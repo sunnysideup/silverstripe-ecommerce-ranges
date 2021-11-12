@@ -6,9 +6,14 @@ use SilverStripe\ORM\DataQuery;
 use SilverStripe\ORM\Filters\ExactMatchFilter;
 use SilverStripe\Versioned\Versioned;
 
-use Sunnysideup\Ecommerce\Pages\Product;
+use SilverStripe\Core\Injector\Injector;
 
-class PhotographicProductParentProductsFilter extends ExactMatchFilter
+use Sunnysideup\Ecommerce\Pages\Product;
+use Sunnysideup\Ecommerce\Pages\ProductGroup;
+
+use Sunnysideup\Ecommerce\Config\EcommerceConfig;
+
+class ProductParentProductsFilter extends ExactMatchFilter
 {
     /**
      *@return DataQuery
@@ -35,8 +40,10 @@ class PhotographicProductParentProductsFilter extends ExactMatchFilter
             }
 
             if (! empty($rangeParents)) {
+                $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');
+                $tableName = Injector::inst()->get($className)->Config()->table_name;
                 $query = $query->where('
-                    "PhotographicProduct' . $stage . '"."ID" IN (' . implode(',', $rangeParents) . ')
+                    "'.$tableName. $stage . '"."ID" IN (' . implode(',', $rangeParents) . ')
                 ');
             }
         }
